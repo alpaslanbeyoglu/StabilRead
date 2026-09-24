@@ -1,0 +1,6 @@
+{
+  "name": "StabilRead - Titreşim Önleyici Dinamik Okuyucu",
+  "description": "Telefon ivme ve hareket sensörleri ile araç içi yol titreşimlerini gerçek zamanlı nötralize eden, göz yorgunluğunu ve odak kaybını sıfırlayan stabilizasyonlu okuyucu.",
+  "requestFramePermissions": ["accelerometer", "gyroscope"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
