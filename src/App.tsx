@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArticleItem, StabilizationConfig, TypographySettings, ViewMode } from './types';
 import { SAMPLE_ARTICLES } from './data/sampleArticles';
 import { useDeviceMotion } from './hooks/useDeviceMotion';
+import { useWakeLock } from './hooks/useWakeLock';
 import { Navbar } from './components/Navbar';
 import { ReaderView } from './components/ReaderView';
 import { RSVPReader } from './components/RSVPReader';
@@ -12,6 +13,8 @@ import { VehicleSimulatorPanel } from './components/VehicleSimulatorPanel';
 import { ReadingSettingsModal } from './components/ReadingSettingsModal';
 import { HowItWorksModal } from './components/HowItWorksModal';
 import { CustomTextModal } from './components/CustomTextModal';
+import { MobileQRCodeModal } from './components/MobileQRCodeModal';
+import { Activity, BookOpen, Gauge, Smartphone, SplitSquareVertical, Zap } from 'lucide-react';
 
 export default function App() {
   // Navigation View
@@ -25,6 +28,10 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState<boolean>(false);
   const [isCustomTextOpen, setIsCustomTextOpen] = useState<boolean>(false);
+  const [isQRModalOpen, setIsQRModalOpen] = useState<boolean>(false);
+
+  // Keep screen awake while reading
+  useWakeLock();
 
   // Typography Settings
   const [typography, setTypography] = useState<TypographySettings>({
@@ -93,7 +100,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 font-['Plus_Jakarta_Sans',sans-serif] pb-14 md:pb-0">
       {/* 3-Zone Header Contract */}
       <Navbar
         currentView={currentView}
@@ -105,7 +112,26 @@ export default function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
         onCalibrate={calibrate}
+        onOpenQRModal={() => setIsQRModalOpen(true)}
       />
+
+      {/* Mobile Sensor Permission Activation Banner (if on mobile and not granted yet) */}
+      {!isPermissionGranted && isHardwareAvailable && (
+        <div className="z-20 bg-gradient-to-r from-emerald-950/90 to-indigo-950/90 border-b border-emerald-500/30 px-4 py-2 flex items-center justify-between text-xs animate-in slide-in-from-top-1">
+          <div className="flex items-center gap-2">
+            <Smartphone className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="text-slate-200">
+              Telefonun gerçek hareket sensörlerini bağlamak için onay verin:
+            </span>
+          </div>
+          <button
+            onClick={requestPermission}
+            className="px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg shrink-0 transition-colors shadow-sm"
+          >
+            Sensörü Etkinleştir
+          </button>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden relative">
@@ -173,6 +199,59 @@ export default function App() {
         )}
       </main>
 
+      {/* Mobile Bottom Navigation Bar (Visible on phones & small screens) */}
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 flex items-center justify-around h-14 px-2">
+        <button
+          onClick={() => setCurrentView('reader')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 text-[10px] font-medium transition-colors ${
+            currentView === 'reader' ? 'text-emerald-400' : 'text-slate-400'
+          }`}
+        >
+          <BookOpen className="w-4 h-4 mb-0.5" />
+          <span>Okuyucu</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('rsvp')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 text-[10px] font-medium transition-colors ${
+            currentView === 'rsvp' ? 'text-amber-400' : 'text-slate-400'
+          }`}
+        >
+          <Zap className="w-4 h-4 mb-0.5" />
+          <span>RSVP</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('split')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 text-[10px] font-medium transition-colors ${
+            currentView === 'split' ? 'text-cyan-400' : 'text-slate-400'
+          }`}
+        >
+          <SplitSquareVertical className="w-4 h-4 mb-0.5" />
+          <span>Karşılaştır</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('lab')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 text-[10px] font-medium transition-colors ${
+            currentView === 'lab' ? 'text-indigo-400' : 'text-slate-400'
+          }`}
+        >
+          <Gauge className="w-4 h-4 mb-0.5" />
+          <span>Sensör</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('challenge')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 text-[10px] font-medium transition-colors ${
+            currentView === 'challenge' ? 'text-emerald-400' : 'text-slate-400'
+          }`}
+        >
+          <Activity className="w-4 h-4 mb-0.5" />
+          <span>Test</span>
+        </button>
+      </div>
+
       {/* Vehicle & Vibration Controller Widget (Active in reader / split / lab / rsvp) */}
       {currentView !== 'challenge' && (
         <VehicleSimulatorPanel
@@ -206,6 +285,12 @@ export default function App() {
         onClose={() => setIsCustomTextOpen(false)}
         onAddArticle={handleAddCustomArticle}
       />
+
+      <MobileQRCodeModal
+        isOpen={isQRModalOpen}
+        onClose={() => setIsQRModalOpen(false)}
+      />
     </div>
   );
 }
+

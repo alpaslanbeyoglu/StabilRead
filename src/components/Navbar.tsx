@@ -1,6 +1,7 @@
 import React from 'react';
 import { ViewMode } from '../types';
-import { Activity, BookOpen, Gauge, HelpCircle, Sliders, SplitSquareVertical, Zap } from 'lucide-react';
+import { Activity, BookOpen, Gauge, HelpCircle, Sliders, SplitSquareVertical, Zap, Smartphone } from 'lucide-react';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface NavbarProps {
   currentView: ViewMode;
@@ -12,6 +13,7 @@ interface NavbarProps {
   onOpenSettings: () => void;
   onOpenHowItWorks: () => void;
   onCalibrate: () => void;
+  onOpenQRModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -24,11 +26,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSettings,
   onOpenHowItWorks,
   onCalibrate,
+  onOpenQRModal,
 }) => {
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 h-14 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+    <header className="sticky top-0 z-30 flex items-center justify-between px-3 sm:px-6 h-14 bg-slate-900/95 backdrop-blur-md border-b border-slate-800">
       {/* Zone 1: Wordmark */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <button
           onClick={() => onSelectView('reader')}
           className="flex items-center gap-2 text-left group"
@@ -120,12 +123,15 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
       </nav>
 
-      {/* Zone 3: Primary Actions (Stabilization Master Toggle & Settings) */}
-      <div className="flex items-center gap-2">
+      {/* Zone 3: Primary Actions (Stabilization Master Toggle, PWA Install & Settings) */}
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        {/* PWA Install Button / QR Code Trigger */}
+        <PWAInstallButton onOpenQRModal={onOpenQRModal} />
+
         {/* Main Stabilizer Power Button */}
         <button
           onClick={onToggleStabilization}
-          className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+          className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
             stabilizationEnabled
               ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400 shadow-md shadow-emerald-500/20'
               : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700'
@@ -133,7 +139,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           title={stabilizationEnabled ? 'Stabilizasyon Açık (Tıkla ve Kapat)' : 'Stabilizasyon Kapalı (Tıkla ve Aç)'}
         >
           <span className={`w-2 h-2 rounded-full ${stabilizationEnabled ? 'bg-slate-950 animate-ping' : 'bg-slate-500'}`} />
-          <span>{stabilizationEnabled ? 'Stabilizasyon AKTİF' : 'Stabilizasyon KAPALI'}</span>
+          <span className="hidden sm:inline">{stabilizationEnabled ? 'Stabilizasyon AKTİF' : 'Stabilizasyon KAPALI'}</span>
+          <span className="sm:hidden">{stabilizationEnabled ? 'AKTİF' : 'KAPALI'}</span>
         </button>
 
         {/* Calibrate Sensor Button */}
@@ -169,3 +176,4 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
+
