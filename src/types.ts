@@ -6,7 +6,33 @@ export type VehicleType = 'car' | 'bus' | 'train' | 'walk' | 'offroad' | 'custom
 
 export type FilterAlgorithm = 'kalman' | 'inertial' | 'spring' | 'adaptive';
 
+export type TrackingMode = 'sensor-fusion' | 'eye-camera' | 'imu-only';
+
 export type ViewMode = 'reader' | 'rsvp' | 'split' | 'lab' | 'challenge';
+
+export interface EyeTrackingData {
+  isActive: boolean;
+  hasCameraPermission: boolean;
+  isCalibrated: boolean;
+  leftEye: { x: number; y: number; pupilSize: number; open: boolean };
+  rightEye: { x: number; y: number; pupilSize: number; open: boolean };
+  gazeVector: { x: number; y: number }; // Relative displacement of eyes in pixels
+  headTilt: { roll: number; pitch: number };
+  confidence: number; // 0 to 100%
+  fps: number;
+  isBlinking: boolean;
+  cameraError: string | null;
+}
+
+export interface EyeTrackingConfig {
+  enabled: boolean;
+  trackingMode: TrackingMode;
+  fusionWeight: number; // 0.0 (100% IMU) to 1.0 (100% Eye Tracking)
+  showCameraPreview: boolean;
+  showGazeReticle: boolean;
+  eyeSensitivity: number; // 0.5 to 3.0
+  smoothingFactor: number; // 0.1 to 0.9
+}
 
 export interface MotionData {
   // Raw accelerometer in m/s^2

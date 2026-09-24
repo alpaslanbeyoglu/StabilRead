@@ -40,16 +40,27 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({ isOpen, onClos
             </p>
           </div>
 
-          {/* Step 2: Algorithmic Inversion */}
-          <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2">
+          {/* Step 2: Algorithmic Inversion & Optical Eye Tracking */}
+          <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
             <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm">
-              <span>02. Algoritma: Ters Fazlı İvme Dengeleme (Inverse Inertia)</span>
+              <span>02. Algoritma: Hibrit Sensör Füzyonu & Ön Kamera Göz Takibi</span>
             </div>
             <p className="text-slate-300">
-              Uygulama, telefonun dahili <strong>MEMS İvmeölçer ve Jiroskop</strong> sensörlerini 60 FPS hızında dinler. Telefon yukarı ve sola doğru 3 mm sarsıldığında, ekran üzerindeki yazı metni tam tersi yönde (aşağı ve sağa doğru 3 mm) milisaniyeler içinde kaydırılır.
+              Araçta giderken yalnızca telefon değil, vücudunuz ve başınız da bağımsız olarak salınır. 
+              StabilRead iki ayrı kaynaktan gelen veriyi hibrit Kalman filtresiyle birleştirir:
             </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-emerald-400 font-semibold block">1. MEMS İvmeölçer / Jiroskop</span>
+                <span className="text-slate-400">Telefonun uzaydaki 3 eksenli mikro sarsıntılarını ve çukur darbelerini ölçer.</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-indigo-400 font-semibold block">2. Ön Kamera Göz & İris Takibi</span>
+                <span className="text-slate-400">Göz bebeklerinin ekrana göre bağıl açısını ve baş eğimini (Roll/Pitch) saniyede 60 kez hesaplar.</span>
+              </div>
+            </div>
             <div className="p-3 bg-indigo-950/30 rounded-xl border border-indigo-900/40 font-mono text-[11px] text-indigo-300">
-              ΔX_tel = +a_x(t) → ΔX_metin = -K · Kalman(a_x) → Net_Göz = 0 mm (Sabit)
+              ΔX_nihai = (1 - w) · (-K · IMU_X) + w · (-K_göz · Gaze_X) → Net_Retina = 0 mm (Kristal Kilit)
             </div>
           </div>
 

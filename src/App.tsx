@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ArticleItem, StabilizationConfig, TypographySettings, ViewMode } from './types';
+import { ArticleItem, EyeTrackingConfig, StabilizationConfig, TypographySettings, ViewMode } from './types';
 import { SAMPLE_ARTICLES } from './data/sampleArticles';
 import { useDeviceMotion } from './hooks/useDeviceMotion';
+import { useEyeTracker } from './hooks/useEyeTracker';
 import { useWakeLock } from './hooks/useWakeLock';
 import { Navbar } from './components/Navbar';
 import { ReaderView } from './components/ReaderView';
@@ -14,6 +15,7 @@ import { ReadingSettingsModal } from './components/ReadingSettingsModal';
 import { HowItWorksModal } from './components/HowItWorksModal';
 import { CustomTextModal } from './components/CustomTextModal';
 import { MobileQRCodeModal } from './components/MobileQRCodeModal';
+import { EyeTrackerOverlay } from './components/EyeTrackerOverlay';
 import { Activity, BookOpen, Gauge, Smartphone, SplitSquareVertical, Zap } from 'lucide-react';
 
 export default function App() {
@@ -60,7 +62,21 @@ export default function App() {
     invertY: false,
   });
 
-  // Device Motion & Physics Hook
+  // Eye Tracking Configuration (Front Camera)
+  const [eyeConfig, setEyeConfig] = useState<EyeTrackingConfig>({
+    enabled: true,
+    trackingMode: 'sensor-fusion',
+    fusionWeight: 0.5,
+    showCameraPreview: true,
+    showGazeReticle: true,
+    eyeSensitivity: 1.2,
+    smoothingFactor: 0.5,
+  });
+
+  // Front Camera Optical Eye Tracker Hook
+  const { eyeData, videoRef, startCamera, stopCamera, calibrateEyeBaseline } = useEyeTracker(eyeConfig);
+
+  // Device Motion & Physics Hook (Fused with Eye Tracking)
   const {
     motionData,
     screenShake,
@@ -79,10 +95,20 @@ export default function App() {
     rawHistory,
     stabilizedHistory,
     efficiencyPct,
-  } = useDeviceMotion(config);
+  } = useDeviceMotion(config, eyeData, eyeConfig);
 
   const handleToggleStabilization = () => {
     setConfig((prev) => ({ ...prev, enabled: !prev.enabled }));
+  };
+
+  const handleToggleEyeTracking = () => {
+    if (eyeConfig.trackingMode === 'imu-only') {
+      setEyeConfig((prev) => ({ ...prev, trackingMode: 'sensor-fusion' }));
+      startCamera();
+    } else {
+      setEyeConfig((prev) => ({ ...prev, trackingMode: 'imu-only' }));
+      stopCamera();
+    }
   };
 
   const handleUpdateTypography = (updated: Partial<TypographySettings>) => {
@@ -91,6 +117,10 @@ export default function App() {
 
   const handleUpdateConfig = (updated: Partial<StabilizationConfig>) => {
     setConfig((prev) => ({ ...prev, ...updated }));
+  };
+
+  const handleUpdateEyeConfig = (updated: Partial<EyeTrackingConfig>) => {
+    setEyeConfig((prev) => ({ ...prev, ...updated }));
   };
 
   const handleAddCustomArticle = (newArticle: ArticleItem) => {
@@ -109,10 +139,21 @@ export default function App() {
         onToggleStabilization={handleToggleStabilization}
         efficiencyPct={efficiencyPct}
         isHardwareSensor={motionData.isHardwareSensor}
+        isEyeTrackingActive={eyeData.isActive}
+        onToggleEyeTracking={handleToggleEyeTracking}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
         onCalibrate={calibrate}
         onOpenQRModal={() => setIsQRModalOpen(true)}
+      />
+
+      {/* Floating Eye Tracker PIP HUD Overlay */}
+      <EyeTrackerOverlay
+        eyeData={eyeData}
+        eyeConfig={eyeConfig}
+        onUpdateEyeConfig={handleUpdateEyeConfig}
+        onCalibrateEyes={calibrateEyeBaseline}
+        onToggleCamera={handleToggleEyeTracking}
       />
 
       {/* Mobile Sensor Permission Activation Banner (if on mobile and not granted yet) */}
@@ -184,6 +225,10 @@ export default function App() {
             efficiencyPct={efficiencyPct}
             isHardwareSensor={motionData.isHardwareSensor}
             onRequestPermission={requestPermission}
+            eyeData={eyeData}
+            eyeConfig={eyeConfig}
+            onUpdateEyeConfig={handleUpdateEyeConfig}
+            onCalibrateEyes={calibrateEyeBaseline}
           />
         )}
 
@@ -273,6 +318,9 @@ export default function App() {
         onUpdateTypography={handleUpdateTypography}
         config={config}
         onUpdateConfig={handleUpdateConfig}
+        eyeConfig={eyeConfig}
+        onUpdateEyeConfig={handleUpdateEyeConfig}
+        onCalibrateEyes={calibrateEyeBaseline}
       />
 
       <HowItWorksModal
@@ -293,4 +341,5 @@ export default function App() {
     </div>
   );
 }
+
 

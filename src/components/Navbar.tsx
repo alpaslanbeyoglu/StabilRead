@@ -1,6 +1,6 @@
 import React from 'react';
 import { ViewMode } from '../types';
-import { Activity, BookOpen, Gauge, HelpCircle, Sliders, SplitSquareVertical, Zap, Smartphone } from 'lucide-react';
+import { Activity, BookOpen, Camera, Eye, Gauge, HelpCircle, Sliders, SplitSquareVertical, Zap, Smartphone } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
 
 interface NavbarProps {
@@ -10,6 +10,8 @@ interface NavbarProps {
   onToggleStabilization: () => void;
   efficiencyPct: number;
   isHardwareSensor: boolean;
+  isEyeTrackingActive?: boolean;
+  onToggleEyeTracking?: () => void;
   onOpenSettings: () => void;
   onOpenHowItWorks: () => void;
   onCalibrate: () => void;
@@ -23,6 +25,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleStabilization,
   efficiencyPct,
   isHardwareSensor,
+  isEyeTrackingActive = false,
+  onToggleEyeTracking,
   onOpenSettings,
   onOpenHowItWorks,
   onCalibrate,
@@ -52,6 +56,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="text-slate-300">
             {isHardwareSensor ? 'Dahili Sensör (MEMS)' : 'Araç Simülatörü'}
           </span>
+          {isEyeTrackingActive && (
+            <span className="flex items-center gap-1 text-indigo-400 font-medium">
+              <Eye className="w-3 h-3" />
+              <span>Göz Kilidi</span>
+            </span>
+          )}
           {stabilizationEnabled && (
             <span className="font-mono text-emerald-400 tabular-nums font-semibold">
               %{efficiencyPct} İzolasyon
@@ -123,8 +133,24 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
       </nav>
 
-      {/* Zone 3: Primary Actions (Stabilization Master Toggle, PWA Install & Settings) */}
+      {/* Zone 3: Primary Actions (Stabilization Master Toggle, Eye Tracking, PWA Install & Settings) */}
       <div className="flex items-center gap-1.5 sm:gap-2">
+        {/* Eye Tracker Camera Quick Button */}
+        {onToggleEyeTracking && (
+          <button
+            onClick={onToggleEyeTracking}
+            className={`hidden sm:flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+              isEyeTrackingActive
+                ? 'bg-indigo-600/30 text-indigo-200 border-indigo-500/50 shadow-sm'
+                : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 border-slate-700'
+            }`}
+            title="Ön Kamera Optik Göz Takibi (Aç/Kapat)"
+          >
+            <Camera className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="hidden lg:inline">{isEyeTrackingActive ? 'Göz Takibi: AÇIK' : 'Göz Takibi'}</span>
+          </button>
+        )}
+
         {/* PWA Install Button / QR Code Trigger */}
         <PWAInstallButton onOpenQRModal={onOpenQRModal} />
 
@@ -176,4 +202,5 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
+
 

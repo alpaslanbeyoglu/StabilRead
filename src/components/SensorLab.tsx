@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { MotionData, StabilizationConfig } from '../types';
-import { Activity, Cpu, Gauge, RefreshCw, Smartphone, Zap } from 'lucide-react';
+import { EyeTrackingConfig, EyeTrackingData, MotionData, StabilizationConfig } from '../types';
+import { Activity, Camera, Cpu, Crosshair, Eye, Gauge, RefreshCw, Smartphone, Zap } from 'lucide-react';
 
 interface SensorLabProps {
   motionData: MotionData;
@@ -12,6 +12,10 @@ interface SensorLabProps {
   efficiencyPct: number;
   isHardwareSensor: boolean;
   onRequestPermission: () => void;
+  eyeData?: EyeTrackingData;
+  eyeConfig?: EyeTrackingConfig;
+  onUpdateEyeConfig?: (updated: Partial<EyeTrackingConfig>) => void;
+  onCalibrateEyes?: () => void;
 }
 
 export const SensorLab: React.FC<SensorLabProps> = ({
@@ -24,6 +28,10 @@ export const SensorLab: React.FC<SensorLabProps> = ({
   efficiencyPct,
   isHardwareSensor,
   onRequestPermission,
+  eyeData,
+  eyeConfig,
+  onUpdateEyeConfig,
+  onCalibrateEyes,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -113,19 +121,29 @@ export const SensorLab: React.FC<SensorLabProps> = ({
         <div>
           <h1 className="text-xl font-bold text-white flex items-center gap-2 font-['Plus_Jakarta_Sans']">
             <Cpu className="w-5 h-5 text-indigo-400" />
-            <span>Sensör & Algoritma Teşhis Laboratuvarı</span>
+            <span>Sensör & Göz Takip Teşhis Laboratuvarı</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            MEMS İvmeölçer, Jiroskop sinyalleri ve gerçek zamanlı Kalman filtresi optimizasyonu
+            MEMS İvmeölçer, Jiroskop sinyalleri, Ön Kamera Optik Göz Takibi ve Hibrit Sensör Füzyonu
           </p>
         </div>
 
         <div className="flex items-center gap-3">
+          {onCalibrateEyes && (
+            <button
+              onClick={onCalibrateEyes}
+              className="px-3 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            >
+              <Crosshair className="w-3.5 h-3.5" />
+              <span>Gözü Sıfırla</span>
+            </button>
+          )}
+
           <button
             onClick={onRequestPermission}
-            className="px-3 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
           >
-            <Smartphone className="w-4 h-4" />
+            <Smartphone className="w-4 h-4 text-emerald-400" />
             <span>{isHardwareSensor ? 'Sensör Bağlı' : 'Telefon Sensörünü Bağla'}</span>
           </button>
 
@@ -177,7 +195,7 @@ export const SensorLab: React.FC<SensorLabProps> = ({
         </div>
       </div>
 
-      {/* Grid: 3D Tilt Bubble + Real-Time Telemetry Cards */}
+      {/* Grid: 3D Tilt Bubble + Eye Tracking Gaze Box + Real-Time Telemetry Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* 1. 3D Tilt & G-Force Bubble */}
         <div className="rounded-2xl bg-slate-900 border border-slate-800 p-5 flex flex-col items-center justify-center text-center">
@@ -211,7 +229,61 @@ export const SensorLab: React.FC<SensorLabProps> = ({
           </div>
         </div>
 
-        {/* 2. Real-Time Efficiency & Isolation Gauge */}
+        {/* 2. Front Camera Eye Tracking Telemetry */}
+        <div className="rounded-2xl bg-slate-900 border border-indigo-500/30 p-5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Eye className="w-4 h-4 text-indigo-400" />
+              <span>Göz Bakış Vektörü (Gaze)</span>
+            </span>
+            <span className="font-mono text-xs text-emerald-400 font-bold">
+              {eyeData?.isActive ? `${eyeData.fps} FPS` : 'Beklemede'}
+            </span>
+          </div>
+
+          <div className="my-auto text-center space-y-2">
+            <div className="flex items-center justify-center gap-6">
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="text-[10px] text-slate-500 block">Göz ΔX</span>
+                <span className="font-mono text-lg font-bold text-indigo-300 tabular-nums">
+                  {eyeData?.gazeVector.x || 0} px
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="text-[10px] text-slate-500 block">Göz ΔY</span>
+                <span className="font-mono text-lg font-bold text-indigo-300 tabular-nums">
+                  {eyeData?.gazeVector.y || 0} px
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 text-xs text-slate-400">
+              <span>Baş Eğimi: {eyeData?.headTilt.roll || 0}°</span>
+              <span>·</span>
+              <span>Kırpma: {eyeData?.isBlinking ? 'Göz Kapalı' : 'Açık'}</span>
+            </div>
+          </div>
+
+          {onUpdateEyeConfig && eyeConfig && (
+            <div className="space-y-1 pt-2 border-t border-slate-800 text-[11px]">
+              <div className="flex justify-between text-slate-400">
+                <span>Füzyon Karışımı</span>
+                <span className="text-indigo-300">%{Math.round(eyeConfig.fusionWeight * 100)} Göz Takibi</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={eyeConfig.fusionWeight}
+                onChange={(e) => onUpdateEyeConfig({ fusionWeight: Number(e.target.value) })}
+                className="w-full accent-indigo-400 h-1 bg-slate-800 rounded cursor-pointer"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* 3. Real-Time Efficiency & Isolation Gauge */}
         <div className="rounded-2xl bg-slate-900 border border-slate-800 p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
@@ -236,36 +308,8 @@ export const SensorLab: React.FC<SensorLabProps> = ({
             />
           </div>
         </div>
-
-        {/* 3. Algorithm Configuration */}
-        <div className="rounded-2xl bg-slate-900 border border-slate-800 p-5 flex flex-col justify-between space-y-4">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Aktif Filtreleme Modeli
-          </span>
-
-          <div className="space-y-2">
-            {[
-              { id: 'kalman', label: 'Dinamik Kalman Filtresi', desc: 'Gürültü tahmini ve pürüzsüz takip' },
-              { id: 'spring', label: 'Yaylı Sönümleme (Spring Damper)', desc: 'Doğal elastik merkez dönüşü' },
-              { id: 'adaptive', label: 'Hibrit Uyarlanabilir (Adaptive)', desc: 'Hem mikro titreşim hem sert çukur' },
-              { id: 'inertial', label: 'Saf Eylemsizlik (Raw Inertial)', desc: 'Doğrudan fiziksel 1:1 ters tepki' },
-            ].map((alg) => (
-              <button
-                key={alg.id}
-                onClick={() => onUpdateConfig({ filterAlgorithm: alg.id as any })}
-                className={`w-full text-left p-2.5 rounded-xl text-xs transition-all ${
-                  config.filterAlgorithm === alg.id
-                    ? 'bg-indigo-600/20 border border-indigo-500/50 text-white font-medium'
-                    : 'bg-slate-950/60 hover:bg-slate-800 text-slate-400 border border-slate-800'
-                }`}
-              >
-                <div className="font-semibold text-slate-200">{alg.label}</div>
-                <div className="text-[11px] text-slate-500 mt-0.5">{alg.desc}</div>
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
 };
+

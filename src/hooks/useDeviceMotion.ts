@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MotionData, StabilizationConfig, VehicleType } from '../types';
+import { EyeTrackingConfig, EyeTrackingData, MotionData, StabilizationConfig, VehicleType } from '../types';
 import { KalmanFilter1D, SpringDamper2D, VehicleVibrationSynthesizer } from '../utils/physics';
 
 interface UseDeviceMotionReturn {
@@ -23,7 +23,11 @@ interface UseDeviceMotionReturn {
   efficiencyPct: number;
 }
 
-export function useDeviceMotion(config: StabilizationConfig): UseDeviceMotionReturn {
+export function useDeviceMotion(
+  config: StabilizationConfig,
+  eyeData?: EyeTrackingData,
+  eyeConfig?: EyeTrackingConfig
+): UseDeviceMotionReturn {
   const [isHardwareAvailable, setIsHardwareAvailable] = useState<boolean>(false);
   const [isPermissionGranted, setIsPermissionGranted] = useState<boolean>(false);
   const [simulatorActive, setSimulatorActive] = useState<boolean>(true); // Default to on for immediate testing
@@ -55,6 +59,26 @@ export function useDeviceMotion(config: StabilizationConfig): UseDeviceMotionRet
   const kalmanY = useRef(new KalmanFilter1D(0.15, 0.6));
   const springDamper = useRef(new SpringDamper2D(160, 20));
   const synthRef = useRef(new VehicleVibrationSynthesizer());
+
+  // Eye gaze ref to avoid re-renders inside 60fps physics loop
+  const eyeGazeRef = useRef({ x: 0, y: 0, active: false, weight: 0.5 });
+  useEffect(() => {
+    if (eyeData && eyeConfig && eyeConfig.enabled) {
+      eyeGazeRef.current = {
+        x: eyeData.gazeVector.x,
+        y: eyeData.gazeVector.y,
+        active: eyeData.isActive && !eyeData.isBlinking,
+        weight:
+          eyeConfig.trackingMode === 'eye-camera'
+            ? 1.0
+            : eyeConfig.trackingMode === 'imu-only'
+            ? 0.0
+            : eyeConfig.fusionWeight,
+      };
+    } else {
+      eyeGazeRef.current.active = false;
+    }
+  }, [eyeData, eyeConfig]);
 
   // Hardware sensor readings
   const rawAx = useRef(0);
@@ -186,7 +210,7 @@ export function useDeviceMotion(config: StabilizationConfig): UseDeviceMotionRet
         effAy += rawAy.current;
       }
 
-      // 3. Stabilization Math (Counter-Motion)
+      // 3. Stabilization Math (Counter-Motion + Sensor Fusion)
       let targetCompX = 0;
       let targetCompY = 0;
 
@@ -222,6 +246,16 @@ export function useDeviceMotion(config: StabilizationConfig): UseDeviceMotionRet
           // Raw Inertial
           targetCompX = candidateX;
           targetCompY = candidateY;
+        }
+
+        // 4. Sensor Fusion: Blend with Front Camera Eye Gaze Vector
+        if (eyeGazeRef.current.active) {
+          const w = eyeGazeRef.current.weight; // 0 to 1
+          const eyeCompX = -eyeGazeRef.current.x * (config.invertX ? -1 : 1);
+          const eyeCompY = -eyeGazeRef.current.y * (config.invertY ? -1 : 1);
+
+          targetCompX = (1 - w) * targetCompX + w * eyeCompX;
+          targetCompY = (1 - w) * targetCompY + w * eyeCompY;
         }
 
         // Apply Max Envelope Clamp with soft knee
@@ -306,3 +340,4 @@ export function useDeviceMotion(config: StabilizationConfig): UseDeviceMotionRet
     efficiencyPct,
   };
 }
+
